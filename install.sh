@@ -18,12 +18,12 @@ hermes skills tap add "$BUNDLE_REPO" || echo "（tap 可能已存在，继续）
 
 echo "==> [2/3] 安装 7 个技能（已装过的会自动跳过）"
 for skill in $SKILLS; do
-  if hermes skills list 2>/dev/null | grep -qw "$skill"; then
-    echo "  已安装: $skill（跳过）"
+  if find "$HOME/.hermes/skills" -maxdepth 2 -type d -name "$skill" 2>/dev/null | grep -q .; then
+    echo "  已安装: ${skill}（跳过）"
   else
-    echo "  安装: $skill"
+    echo "  安装: ${skill}"
     hermes skills install "$BUNDLE_REPO/skills/$skill" --category research --yes \
-      || echo "  ⚠️ $skill 安装失败，请手动安装: hermes skills install $BUNDLE_REPO/skills/$skill"
+      || echo "  ⚠️ ${skill} 安装失败，请手动安装: hermes skills install $BUNDLE_REPO/skills/$skill"
   fi
 done
 
