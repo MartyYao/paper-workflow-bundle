@@ -22,8 +22,7 @@ for skill in $SKILLS; do
     echo "  已安装: $skill（跳过）"
   else
     echo "  安装: $skill"
-    hermes skills install "tap/$BUNDLE_REPO/$skill" --category research --yes \
-      || hermes skills install "$BUNDLE_REPO/skills/$skill" --category research --yes \
+    hermes skills install "$BUNDLE_REPO/skills/$skill" --category research --yes \
       || echo "  ⚠️ $skill 安装失败，请手动安装: hermes skills install $BUNDLE_REPO/skills/$skill"
   fi
 done

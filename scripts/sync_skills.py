@@ -45,6 +45,18 @@ def list_repo_files(repo: str) -> list[str]:
     return [t["path"] for t in tree if t["type"] == "blob"]
 
 
+def _ver_tuple(ver: str):
+    """'0.4.0' -> (0,4,0)；无版本号返回 None"""
+    parts = re.split(r"[.-]", ver.strip())
+    nums = []
+    for p in parts[:3]:
+        if p.isdigit():
+            nums.append(int(p))
+        else:
+            break
+    return tuple(nums) if nums else None
+
+
 def sync_skill(skill: str, repo: str, keep_dirs: list[str]) -> None:
     dst = os.path.join(SKILLS_DIR, skill)
     os.makedirs(dst, exist_ok=True)
@@ -57,6 +69,19 @@ def sync_skill(skill: str, repo: str, keep_dirs: list[str]) -> None:
     old = b""
     if os.path.exists(os.path.join(dst, "SKILL.md")):
         old = open(os.path.join(dst, "SKILL.md"), "rb").read()
+
+    # 版本倒退保护：raw CDN 有延迟，可能拉到旧版覆盖新版（真实事故）。
+    # 远端版本 < 本地版本时跳过覆盖并告警。
+    if old:
+        m2 = re.search(rb"^version:\s*(\S+)", old, re.M)
+        old_ver = m2.group(1).decode() if m2 else None
+        if old_ver and old_ver != ver:
+            nv, ov = _ver_tuple(ver), _ver_tuple(old_ver)
+            if nv and ov and nv < ov:
+                print(f"  ⚠️ {skill}: 远端 {ver} < 本地 {old_ver}（CDN 延迟？）跳过 SKILL.md 覆盖")
+                content = old  # 保留本地新版
+                ver = old_ver
+
     if hashlib.sha256(old).hexdigest() != hashlib.sha256(content).hexdigest():
         with open(os.path.join(dst, "SKILL.md"), "wb") as f:
             f.write(content)

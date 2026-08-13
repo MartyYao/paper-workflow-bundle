@@ -134,7 +134,8 @@ terminal("pyresearch -c \"import pandas as pd; ...\"")
 
 ```bash
 # 方式 1（推荐）：从聚合仓库一键装齐（已装的自动跳过）
-curl -fsSL https://raw.githubusercontent.com/MartyYao/paper-workflow-bundle/main/install.sh | bash
+curl -fsSL -o /tmp/pw-install.sh https://raw.githubusercontent.com/MartyYao/paper-workflow-bundle/main/install.sh
+bash /tmp/pw-install.sh
 
 # 方式 2：只补缺失的单个技能
 hermes skills install MartyYao/paper-workflow-bundle/skills/<技能名> --category research --yes

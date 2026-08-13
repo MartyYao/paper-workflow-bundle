@@ -671,7 +671,7 @@ docx 文件先用 `zipfile` 解压 `word/document.xml`，提取 `<w:t>` 文本�
 ```bash
 cp ~/.hermes/skills/writing/meng-skills/SKILL.md ~/hermes/技能/meng\ skills/meng-skills.md
 cp ~/.hermes/skills/writing/meng-skills/references/* ~/hermes/技能/meng\ skills/references/
-diff -r ~/.hermes/skills/writing/meng-skills/ ~/hermes/技能/meng\ skills/  # 仅允许 .DS_Store/AGENTS.md/MEMORY.md/SKILL.md↔meng-skills.md 结构性差异
+diff -r ~/.hermes/skills/writing/meng-skills/ ~/hermes/技能/meng\ skills/  # 仅允许 .DS_Store/SKILL.md↔meng-skills.md 结构性差异
 ```
 
 ⚠️ 2026-08-06 K3 终审实测：旧流程只 cp SKILL.md 导致 references/ 双向漂移（Hermes 端缺 professional-voice.md 运行时断链、仓库端缺句式库）——**必须全目录同步**。不可只改一个——否则两个副本内容不一致，使用者可能用到旧版本。以下路径仅为示例，按实际环境调整。

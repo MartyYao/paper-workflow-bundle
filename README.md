@@ -23,7 +23,7 @@ hermes skills tap add MartyYao/paper-workflow-bundle
 # 2. 逐个安装（已安装的会自动跳过）
 for skill in paper-workflow meng-skills stata-regression research-discovery \
              chinese-literature journal-submission-docx research-media-skill; do
-  hermes skills install "tap/MartyYao/paper-workflow-bundle/$skill" --category research --yes
+  hermes skills install "MartyYao/paper-workflow-bundle/skills/$skill" --category research --yes
 done
 
 # 3. （可选）bundle 定义：/paper-workflow 一次加载全部

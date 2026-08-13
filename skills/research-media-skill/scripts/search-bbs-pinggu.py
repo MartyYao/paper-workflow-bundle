@@ -1,24 +1,20 @@
 """
-Search bbs.pinggu.org (经管之家) and read full thread content.
-Auto-refreshes cookies from Camofox browser session if expired (Hermes Agent).
-Other agents: detect expiry and guide user to re-export.
+Read bbs.pinggu.org (经管之家) thread content via curl + cookie file.
+
+This is the GENERIC fallback layer (works in any agent environment).
+Hermes 主路线用 bsk（腾讯 BrowserSkill 真实浏览器登录态），见 SKILL.md。
 
 Usage:
-  python3 search-bbs-pinggu.py read <thread-url>     # Read thread (auto-refresh cookies)
-  python3 search-bbs-pinggu.py check                  # Check cookie validity
-  python3 search-bbs-pinggu.py login                  # Force cookie refresh from Camofox
+  python3 search-bbs-pinggu.py read <thread-url>     # Read thread (all reply floors)
+  python3 search-bbs-pinggu.py check                 # Check cookie validity
 """
-import os, sys, re, json, time, html as html_mod
-import urllib.request, urllib.parse
-import subprocess, shutil, sqlite3, tempfile
+import os, sys, re, html as html_mod
+import urllib.request
 
 COOKIE_FILE = os.path.expanduser('~/.hermes/credentials/bbs-pinggu-cookies.txt')
 AUTH_COOKIE_NAMES = ['Z9M6_79fc_auth', 'Z9M6_79fc_saltkey']
-# Test thread used for cookie validity check (a well-known thread).
-# If this thread is ever deleted, the check will fail and trigger refresh.
 TEST_URL = 'https://bbs.pinggu.org/thread-7909828-1-1.html'
 
-# ─── Cookie helpers ───────────────────────────────────────────
 
 def read_cookies():
     if not os.path.exists(COOKIE_FILE):
@@ -32,20 +28,12 @@ def read_cookies():
                 cookies[k.strip()] = v.strip()
     return cookies
 
-def write_cookies(cookies_dict):
-    """Write cookies dict to file."""
-    os.makedirs(os.path.dirname(COOKIE_FILE), exist_ok=True)
-    with open(COOKIE_FILE, 'w') as f:
-        f.write(f"# bbs.pinggu.org login cookies\n")
-        f.write(f"# 最后更新: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-        for k, v in cookies_dict.items():
-            f.write(f"{k}={v}\n")
-    os.chmod(COOKIE_FILE, 0o600)
 
 def cookies_valid():
     """Test if current cookies can read a thread. Returns bool."""
     cookies = read_cookies()
     if not cookies:
+        print("  ⏭️  cookie 文件不存在或为空:", COOKIE_FILE)
         return False
     cookie_str = '; '.join(f'{k}={v}' for k, v in cookies.items())
     try:
@@ -55,91 +43,13 @@ def cookies_valid():
         )
         with urllib.request.urlopen(req, timeout=15) as resp:
             raw = resp.read()
-        html = raw.decode('gbk', errors='replace')
-        # Valid: page contains post content (postmessage_) and is large.
-        # Use byte length of raw response (login-wall page is ~5KB;
-        # full thread is 100KB+). Decoded char count is unreliable for GBK.
-        has_post = 'postmessage_' in html
+        html_text = raw.decode('gbk', errors='replace')
+        has_post = 'postmessage_' in html_text
         is_large = len(raw) > 100000
         return has_post and is_large
     except Exception:
         return False
 
-# ─── Camofox session extraction ───────────────────────────────
-
-def find_camofox_profile():
-    """Find the Camofox Firefox profile directory from running processes."""
-    try:
-        out = subprocess.run(
-            ['ps', 'aux'], capture_output=True, text=True, timeout=10
-        ).stdout
-        for line in out.split('\n'):
-            low = line.lower()
-            if 'camoufox' in low and '-profile' in low:
-                m = re.search(r'-profile\s+(\S+)', line)
-                if m:
-                    return m.group(1)
-    except Exception:
-        pass
-    return None
-
-def extract_cookies_from_camofox():
-    """
-    Extract auth cookies from the running Camofox browser profile.
-    Works because the user logs into bbs.pinggu.org in Camofox,
-    and Firefox stores all cookies (incl. HttpOnly) in cookies.sqlite.
-    Returns dict of cookies or None on failure.
-    """
-    profile = find_camofox_profile()
-    if not profile:
-        print("  ⏭️  Camofox not running. Cannot extract cookies.")
-        return None
-
-    db_path = os.path.join(profile, 'cookies.sqlite')
-    if not os.path.exists(db_path):
-        print(f"  ⏭️  cookies.sqlite not found at {db_path}")
-        return None
-
-    # Copy DB + WAL + SHM to temp dir (Firefox uses WAL mode: freshly
-    # written cookies may still be in -wal, not checkpointed to main db)
-    tmpdir = tempfile.mkdtemp(prefix='bbs-cookies-')
-    try:
-        for suffix in ['', '-wal', '-shm']:
-            src = db_path + suffix
-            if os.path.exists(src):
-                shutil.copy2(src, os.path.join(tmpdir, os.path.basename(src)))
-
-        tmp_db = os.path.join(tmpdir, 'cookies.sqlite')
-        conn = sqlite3.connect(tmp_db)
-        cur = conn.cursor()
-        placeholders = ','.join('?' for _ in AUTH_COOKIE_NAMES)
-        cur.execute(
-            f'SELECT name, value FROM moz_cookies WHERE host LIKE "%pinggu.org%" AND name IN ({placeholders})',
-            AUTH_COOKIE_NAMES
-        )
-        rows = cur.fetchall()
-        conn.close()
-
-        if not rows:
-            print("  ⏭️  Auth cookies not found in Camofox profile. "
-                  "User must log in to bbs.pinggu.org in Camofox first.")
-            return None
-
-        cookies = dict(rows)
-        missing = [n for n in AUTH_COOKIE_NAMES if n not in cookies]
-        if missing:
-            print(f"  ⏭️  Missing cookies in Camofox: {missing}")
-            return None
-
-        print(f"  ✅ Extracted {len(cookies)} auth cookies from Camofox session")
-        return cookies
-    except Exception as e:
-        print(f"  ❌ Cookie extraction error: {e}")
-        return None
-    finally:
-        shutil.rmtree(tmpdir, ignore_errors=True)
-
-# ─── Thread reader ────────────────────────────────────────────
 
 def extract_post_content(html_text):
     post_ids = re.findall(r'id="postmessage_(\d+)"', html_text)
@@ -153,7 +63,7 @@ def extract_post_content(html_text):
     if td_end < 0:
         td_end = idx + 10000
     segment = html_text[idx:td_end]
-    blocks = re.findall(r'(?:[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]{4,}[^<]*?)(?=<|$)', segment)
+    blocks = re.findall(r'(?:[\u4e00-\u9fff]{4,}[^<]*?)(?=<|$)', segment)
     meaningful = []
     for b in blocks:
         clean = re.sub(r'\s+', ' ', b).strip()
@@ -162,93 +72,55 @@ def extract_post_content(html_text):
             meaningful.append(clean)
     return meaningful
 
+
 def read_thread(url):
     """Read a bbs.pinggu.org thread. Cookies must be valid before calling."""
     cookies = read_cookies()
+    if not cookies:
+        print("❌ 无 cookie。请按 SKILL.md「Read via curl」指引配置经管之家登录 cookies。")
+        return
     cookie_str = '; '.join(f'{k}={v}' for k, v in cookies.items())
     try:
-        req = urllib.request.Request(
-            url,
-            headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-                     'Cookie': cookie_str}
-        )
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+            'Cookie': cookie_str,
+        })
+        with urllib.request.urlopen(req, timeout=25) as resp:
             raw = resp.read()
     except Exception as e:
-        return {'error': str(e)}
-
+        print(f"❌ 读取失败: {e}")
+        return
     html_text = raw.decode('gbk', errors='replace')
-    content = extract_post_content(html_text)
-    title_match = re.search(r'<title>(.*?)</title>', html_text)
-    title = html_mod.unescape(title_match.group(1)) if title_match else url
+    if 'postmessage_' not in html_text:
+        print("⚠️ 页面无帖子内容（登录墙？）。运行 check 验证 cookie，或改用 bsk 路线。")
+        return
+    posts = extract_post_content(html_text)
+    if not posts:
+        print("⚠️ 未提取到有效内容")
+        return
+    for i, p in enumerate(posts):
+        print(f'--- 楼层 {i + 1} ---')
+        print(p[:600])
 
-    return {
-        'title': title,
-        'url': url,
-        'content': content,
-        'total_paragraphs': len(content)
-    }
 
-# ─── Main ─────────────────────────────────────────────────────
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__)
+        sys.exit(1)
+    action = sys.argv[1]
+    if action == 'read':
+        if len(sys.argv) < 3:
+            print("用法: search-bbs-pinggu.py read <thread-url>")
+            sys.exit(1)
+        read_thread(sys.argv[2])
+    elif action == 'check':
+        ok = cookies_valid()
+        print("✅ cookies 有效" if ok else "❌ cookies 无效或已过期")
+        sys.exit(0 if ok else 1)
+    else:
+        print(__doc__)
+        sys.exit(1)
+
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print("Usage:")
-        print("  search-bbs-pinggu.py read <thread-url>   Read thread (auto-refresh cookies)")
-        print("  search-bbs-pinggu.py check               Check cookie validity (exit 0=valid, 1=expired)")
-        print("  search-bbs-pinggu.py login               Force cookie refresh from Camofox")
-        sys.exit(1)
-
-    action = sys.argv[1]
-
-    if action == 'check':
-        valid = cookies_valid()
-        print(f"Cookies valid: {valid}")
-        sys.exit(0 if valid else 1)
-
-    elif action == 'login':
-        print("🔄 Refreshing cookies from Camofox session...")
-        cookies = extract_cookies_from_camofox()
-        if cookies:
-            write_cookies(cookies)
-            if cookies_valid():
-                print("✅ Cookies refreshed and verified!")
-                sys.exit(0)
-            else:
-                print("❌ Extracted cookies failed verification")
-                sys.exit(1)
-        else:
-            print("❌ Could not extract cookies. User must log in to bbs.pinggu.org in Camofox first.")
-            sys.exit(1)
-
-    elif action == 'read':
-        url = sys.argv[2] if len(sys.argv) > 2 else input("URL: ")
-        # Step 1: Check cookies, refresh from Camofox if needed
-        if not cookies_valid():
-            print("🔄 Cookies expired. Trying to refresh from Camofox session...")
-            cookies = extract_cookies_from_camofox()
-            if cookies:
-                write_cookies(cookies)
-                if not cookies_valid():
-                    print("❌ Refreshed cookies failed verification")
-                    sys.exit(1)
-            else:
-                print("❌ Cannot refresh cookies. Options:")
-                print("   1. Open bbs.pinggu.org in Camofox, log in, then retry")
-                print("   2. Re-export cookies from browser to " + COOKIE_FILE)
-                sys.exit(1)
-        result = read_thread(url)
-        if 'error' in result:
-            print(f"Error: {result['error']}")
-            sys.exit(1)
-        print(f"\n== {result['title']} ==")
-        print(f"URL: {result['url']}")
-        print(f"Total paragraphs: {result['total_paragraphs']}")
-        print("\n--- Content ---")
-        for p in result['content'][:30]:
-            print(f"\n{p[:300]}")
-        if result['total_paragraphs'] > 30:
-            print(f"\n... ({result['total_paragraphs'] - 30} more paragraphs)")
-    else:
-        print(f"Unknown action: {action}")
-        sys.exit(1)
+    main()

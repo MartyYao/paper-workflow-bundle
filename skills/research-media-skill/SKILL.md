@@ -1,58 +1,84 @@
 ---
 name: research-media-skill
-version: 0.1.2
-description: 搜索经管之家(bbs.pinggu.org)等中文论坛获取实证实操方案。触发：Stata/计量/平行趋势/DID/回归问题。
+version: 0.1.3
+description: >
+  搜索经管之家(bbs.pinggu.org)等中文论坛获取实证实操方案。触发：Stata/计量/平行趋势/DID/回归问题。
+  登录墙站点读帖主路线 = 腾讯 BrowserSkill (bsk) 真实浏览器登录态直连；无 bsk 环境降级为 curl + cookie。
 ---
 
-# Research Media Skill
+# research-media-skill — 中文论坛实操方案检索
 
 ## 概述
 
-本技能让 AI Agent 能够搜索中文经济论坛（如经管之家 bbs.pinggu.org）并读取帖子正文。
+让 AI Agent 搜索中文经济论坛（如经管之家 bbs.pinggu.org）并读取帖子正文。
 
-技能分为两个独立能力：
-- **Read（读取正文）** — 通用层，任何有 HTTP 能力的 Agent 均可使用。**内置自动 cookie 续期**（Hermes Agent 下）。
-- **Search（搜索帖子）** — Agent 依赖层，各 Agent 用自身能力完成。
+两个独立能力：
+
+- **Read（读取正文）** — 两层：**bsk 登录态直连**（Hermes 主路线，零 cookie 操作）；curl + cookie 文件（通用降级层，任何 Agent 可用）
+- **Search（搜索帖子）** — Agent 依赖层，各 Agent 用自身能力完成
 
 ---
 
-## Read（通用层）：读取经管之家帖子正文
+## 路由规则（先读）
 
-**任何 Agent 都能用**，只需一个 HTTP 客户端和登录 cookies。Hermes Agent 下 cookies 过期时会自动续期。
+| 场景 | 路线 | 说明 |
+|------|------|------|
+| Hermes 且已装 bsk（`~/.local/bin/bsk`） | **bsk** | 用户真实 Chrome 登录态，即开即用 |
+| 无 bsk / 其他 Agent | curl + cookie | 需用户提供 cookie 文件 |
+| 搜索帖子 | 百度 `site:`（Camofox 或 Agent 自身搜索） | 见 Search 节 |
 
-### 前置要求
+---
 
-**登录 cookies**：无论哪种 Agent 使用本技能，都需要先让用户配置经管之家的登录 cookies。
+## Read via bsk（Hermes 主路线）
 
-引导用户操作（Agent 据此引导用户，不可自行猜测或编造）：
-1. 在浏览器打开 https://bbs.pinggu.org 并登录
-2. 按 F12 → Application → Cookies → bbs.pinggu.org
+用户经管之家登录态在真实 Chrome 里天然有效（页面显示 Marty_Yao），无需 cookie 导出或验证码交接。
+
+```bash
+SID=$(bsk session start)                        # 打开 Agent Window
+bsk navigate --session $SID "https://bbs.pinggu.org/thread-XXXXXXX-1-1.html"
+bsk get-html --session $SID --out /tmp/thread.html   # 必须 --out，stdout 管道不可靠
+bsk session stop --all                          # 任务结束必须清理
+```
+
+正文提取（UTF-8 输出，无 GBK 问题）：
+
+```python
+import re, html
+raw = open('/tmp/thread.html', encoding='utf-8').read()
+posts = re.findall(r'<td class="t_f" id="postmessage_\d+">(.*?)</td>', raw, re.S)
+for i, p in enumerate(posts):
+    p = re.sub(r'<[^>]+>', ' ', p); p = html.unescape(p)
+    p = re.sub(r'\s+', ' ', p).strip()
+    if p and len(p) > 30:
+        print(f'--- 楼层 {i+1} ---'); print(p[:600])
+```
+
+要点：
+- navigate 偶发 RPC 超时但页面已加载——先 snapshot 确认，别急着重试
+- 登录验证：snapshot 中出现用户账号名（Marty_Yao）即登录态有效；否则用 `bsk request-help` 把控制权交给用户处理登录/验证码
+- 楼层 1 常混入 CSS 邀请码样式（.invite 开头），跳过即可
+- **隐私边界**：bsk 操作真实浏览器，仅限需要登录态的任务，用完即停会话
+
+## Read via curl（通用降级层）
+
+无 bsk 环境（其他 Agent / 未安装）。需要用户配置经管之家登录 cookies：
+
+1. 浏览器打开 https://bbs.pinggu.org 并登录
+2. F12 → Application → Cookies → bbs.pinggu.org
 3. 找到 `Z9M6_79fc_auth` 和 `Z9M6_79fc_saltkey` 两个键
-4. 将它们的值按 `Name=Value` 格式写入凭据文件（每行一个，`#` 开头为注释）
-5. 设置文件权限为 `chmod 600`
+4. 按 `Name=Value` 格式写入凭据文件（每行一个，`#` 开头为注释）
+5. `chmod 600` 凭据文件
 
-凭据文件路径：推荐 `~/.hermes/credentials/bbs-pinggu-cookies.txt`。
+凭据文件路径：`~/.hermes/credentials/bbs-pinggu-cookies.txt`（Hermes）；其他 Agent 按自身约定，**凭据值不写入技能文件**。
 
-### 自动 cookie 续期（Hermes Agent 专用）
+读取命令（推荐辅助脚本，自动处理解码与内容提取）：
 
-**原理**：用户在 Camofox 浏览器里登录一次经管之家后，Firefox 会把全部 cookies（包括 HttpOnly 的 `Z9M6_79fc_auth`）存到 profile 的 `cookies.sqlite`。脚本从中直接提取，无需登录表单、无需验证码。
-
-1. **用户一次性配置**：在 Camofox 里打开 https://bbs.pinggu.org 并登录（保持会话有效）
-2. Agent 调用 `search-bbs-pinggu.py read <URL>` 时会自动：
-   - 检查 cookies 文件是否有效 → 有效则直接读帖
-   - 无效 → 从 Camofox profile 的 `cookies.sqlite` 提取 `Z9M6_79fc_auth` / `Z9M6_79fc_saltkey` → 写入文件 → 用新 cookies 读帖
-3. 全程自动，无需用户干预。**前提**：Camofox 里保持登录态（登录会话与文件 cookies 独立，Camofox 会话有效即可续期）
-
-**其他 Agent**：如果无法自动续期，Agent 应提示用户手动重新导出 cookies。
-
-### 读取命令
-
-推荐使用辅助脚本（自动处理 cookie 检查、续期、解码、内容提取）：
 ```bash
 python3 scripts/search-bbs-pinggu.py read "https://bbs.pinggu.org/thread-XXXXXXX-1-1.html"
 ```
 
 或手动 curl（需自行确保 cookies 有效）：
+
 ```bash
 curl -sL --max-time 20 \
   -A "Mozilla/5.0" \
@@ -61,57 +87,32 @@ curl -sL --max-time 20 \
   | iconv -f gbk -t utf-8
 ```
 
-### 内容提取
-帖子正文在 `<td class="t_f" id="postmessage_XXXXX">` 中。
-提取中文文本块，过滤广告关键词（「赵安豆老师微信」「送您全额奖学金」等）。
-
 ### 注意事项
-- 页面编码为 GBK，需转 UTF-8（`iconv -f gbk -t utf-8`）
-- Cookies 有时效——Hermes 下自动续期；其他 Agent 提示用户重新导出
-- 不要伪造帖子内容——读取失败时如实报告
+
+- 页面编码 GBK，curl 路线需 `iconv -f gbk -t utf-8`（bsk 路线无此问题）
+- Cookies 有时效——失效时引导用户重新导出，**不要伪造帖子内容**，读取失败如实报告
+- 脚本只支持 `read`/`check` 两个动作；站内搜索页 search.php 有滑动验证码，站内搜索不可用，只能靠百度 `site:` 发现帖子
 
 ---
 
 ## Search（Agent 依赖层）：搜索帖子
 
-各 Agent 使用自身能力搜索经管之家的帖子。**核心目标**：找到 `https://bbs.pinggu.org/thread-XXXXXXX-1-1.html` 格式的 URL。
+各 Agent 使用自身能力搜索经管之家。**核心目标**：找到 `https://bbs.pinggu.org/thread-XXXXXXX-1-1.html` 格式的 URL。
 
 ### Hermes Agent
 
-使用 Camofox 浏览器 + 百度搜索：
+百度搜索（Camofox 浏览器，无需登录态）：
 
-```bash
-./scripts/camofox-manager.sh start
-```
-然后用 `browser_navigate` 打开：
 ```
 https://www.baidu.com/s?wd=site%3Abbs.pinggu.org+<关键词>
 ```
-从搜索结果中提取帖子 URL，完成后关闭 Camofox：
-```bash
-./scripts/camofox-manager.sh stop
-```
 
-### Claude Code
+启动 Camofox 方式：`~/.hermes/scripts/camofox-manager.sh start`（或按 browser-automation 技能的路由，搜索类任务走 Camofox）；搜完关闭释放内存。从搜索结果提取 `thread-XXXXXXX-1-1.html` 格式 URL，然后进入 Read 步骤。
 
-**方式 A**（在 Hermes 内部运行 Claude Code）：与 Hermes Agent 相同，使用 Camofox。
+### Claude Code / Kimi Code / Pi / Codex / 其他 Agent
 
-**方式 B**（独立运行 Claude Code）：使用 Claude Code 自带的 web 搜索能力，搜索 `site:bbs.pinggu.org 关键词`，从结果中提取帖子 URL。
-
-### Kimi Code
-
-Kimi Code 有内置互联网搜索能力。直接在 prompt 中要求：
-```
-请搜索 site:bbs.pinggu.org 上的相关讨论，把帖子 URL 发给我。
-```
-
-### Pi / Codex / 其他 Agent
-
-利用自身具备的 web 搜索工具。如果 Agent 没有搜索能力，可以让用户直接提供帖子 URL（用户在浏览器里搜，把链接给 Agent）。
-
-### 兜底方案（所有 Agent 通用）
-
-如果 Agent 无法自动搜索，**用户可以手动搜索后在对话中提供帖子 URL**，Agent 直接进入 Read 步骤读取正文。
+- 有搜索能力 → 直接搜 `site:bbs.pinggu.org 关键词`
+- 无搜索能力 → 让用户手动搜索后提供帖子 URL，Agent 进入 Read 步骤
 
 ---
 
@@ -121,16 +122,15 @@ Kimi Code 有内置互联网搜索能力。直接在 prompt 中要求：
 research-media-skill/
 ├── SKILL.md                       ← 本文件
 ├── README.md                      ← 概述 + 首次安装引导
-├── AGENTS.md                      ← 跨 Agent 操作指引
-├── CLAUDE.md                      ← Claude Code 专用指引
 └── scripts/
-    ├── camofox-manager.sh         ← Camofox 浏览器管理（Hermes 专用）
-    └── search-bbs-pinggu.py       ← 帖子读取 + 自动 cookie 续期（从 Camofox 会话提取）
+    └── search-bbs-pinggu.py       ← curl 读帖 + 内容提取（通用降级层）
 ```
 
 ---
 
 ## 安全说明
+
 - 凭据值不写入技能文件。Agent 引导用户自行填写
-- 凭据文件权限 `chmod 600`。登录凭据与 cookie 文件分离存储
+- 凭据文件权限 `chmod 600`
 - 不伪造内容。读取失败时如实报告
+- bsk 路线权限大（可触达用户所有已登录账号）：仅限登录墙任务使用，任务结束立即 `session stop --all`

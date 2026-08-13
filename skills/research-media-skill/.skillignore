@@ -1,0 +1,4 @@
+# 文档/分发文件，非技能运行内容，不参与安全扫描
+README.md
+AGENTS.md
+CLAUDE.md
