@@ -1,6 +1,6 @@
 ---
 name: paper-workflow
-version: 0.4.0
+version: 0.4.1
 description: >
   8 阶段论文全流程编排器，覆盖从选题到投稿的完整实证研究生命周期。
   触发条件：用户说"写论文""开始写论文""论文工作流""继续论文""论文写到哪了"
@@ -588,6 +588,8 @@ skill_view(name='stata-regression')
 
 **核心概念：Run Tag**——每次全量重跑或样本口径变更 = 一个运行标记 `YYYYMMDD_vN`（如 `20260807_v3`）。所有产物（CSV 目录、do 归档、log、正文状态行）绑定同一 tag。
 
+> **开新 run 必须走 `stata-regression/scripts/rerun.sh new "<tag>"`**（v0.4.1 强化）：自动归档旧表到 `output/archive/tables_<旧tag>/` → 建 `output/tables/<tag>/` → 更新 MAPPING.md。禁止直接改 CSV 或手动建目录——原地覆盖是追溯失败的根源（2026-08-13 实测：正文 -0.7445 vs CSV -0.8004，137 处不一致因 CSV 被覆盖无从追溯）。do 模板已强制 `global TAG` + `output/tables/$TAG/` 输出路径。
+
 1. **CSV 命名 = 正文表号**：输出至 `output/tables/rerun_<tag>/table<NN>.csv`（NN 为正文表号，如 table04 = 正文表 4）。正文表号重排时同步重命名 CSV；禁止靠"内容匹配"猜对应。
 2. **四件套绑定**：一张表 = do 段落 + log + CSV + 正文表格 + 状态行标注，五者缺一即该表数字不可追溯（按 P0 处理）。正文引用表格前先确认四件套齐全。
 3. **改数字五步闭环**：改 do → 重跑（log 更新）→ CSV 更新 → 正文表格更新 → 状态行更新。禁止只改正文不重跑、只重跑不改 CSV。do 与 log 的样本口径必须一致（如 keep 条件），不一致视为版本错位。
@@ -690,7 +692,25 @@ DV 有多个度量版本时，**V1 做主回归，V2 做稳健性**。不要 V1+
 
 缺失 → 从 log 文件提取。
 
-三项审查全部通过后，才能进入阶段 6 写作。
+### 审查 4：数字对账（v0.4.1，⚠️ 关键）
+
+**正文表格数字必须能追溯到 CSV。** 运行数字对账脚本（位于 `stata-regression/scripts/verify-numbers.py`）：
+
+```bash
+python3 <stata-regression>/scripts/verify-numbers.py "06-论文稿/正文/05-实证结果.md" \
+  --tables "<工作文件夹>/output/tables/<当前tag>/" --state-line
+```
+
+- **退出码 0** → 通过
+- **有未匹配** → 逐条处置后才算通过：
+  - 数字出自描述统计/正文计算 → 在表格旁注明出处（log/CSV 路径）
+  - 数字出自旧 run → 找回对应 tag 目录（`output/archive/tables_<旧tag>/`）核对，或更新正文
+  - 精度差异误报 → `--verbose` 核对后 `--ignore-unmatched` 放行，并记录解释
+- 状态行版本（`> 版本：<tag>`）必须能映射到真实 tag 目录，否则视为空头支票
+
+> 真实案例（2026-08-13）：正文表 5 post 系数 -0.7445 vs 归档 CSV -0.8004——正文用的是另一轮 run 的数字，对账一次抓出 137 处不一致。这正是本节存在的意义。
+
+四项审查全部通过后，才能进入阶段 6 写作。
 
 ---
 
@@ -703,7 +723,7 @@ DV 有多个度量版本时，**V1 做主回归，V2 做稳健性**。不要 V1+
 在动笔写正文之前，必须先把所有实证表格从 CSV 转为 markdown 写入 `05-实证/主回归结果.md`：
 
 1. 确认 `分析命令/` 下所有 CSV 已生成且 log 正常关闭
-2. 运行 `esttab2pipe.py`（位于 `stata-regression/scripts/esttab2pipe.py`）将 CSV 转为 markdown pipe table
+2. 运行 `esttab2html.py`（位于 `stata-regression/scripts/esttab2html.py`）将 CSV 转为 markdown pipe table
 3. 写入 `05-实证/主回归结果.md`，每张表含完整系数+标准误+表注
 4. **绝不省略控制变量**：表必须有 N 列控制变量系数行，不可用 ✓ 缩写
 5. 同步 do 文件到 Obsidian `04-数据/分析命令/`，并同步到本地工作文件夹
