@@ -4,7 +4,7 @@
 
 | 技能名 | 源仓库 | 版本 |
 |--------|--------|------|
-| paper-workflow | paper-workflow-skill | 0.4.1 |
+| paper-workflow | paper-workflow-skill | 0.4.2 |
 | meng-skills | meng-skills | - |
 | stata-regression | Stata-Regression-skill | 0.2.5 |
 | research-discovery | research-discovery-skill | 0.1.1 |

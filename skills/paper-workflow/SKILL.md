@@ -1,6 +1,6 @@
 ---
 name: paper-workflow
-version: 0.4.1
+version: 0.4.2
 description: >
   8 阶段论文全流程编排器，覆盖从选题到投稿的完整实证研究生命周期。
   触发条件：用户说"写论文""开始写论文""论文工作流""继续论文""论文写到哪了"
@@ -133,12 +133,15 @@ terminal("pyresearch -c \"import pandas as pd; ...\"")
 任一缺失 → 立即执行（不等用户指示）：
 
 ```bash
-# 方式 1（推荐）：从聚合仓库一键装齐（已装的自动跳过）
+# 方式 1（推荐）：从聚合仓库一键装齐（zip 下载拷贝，无 API 限额、不经过 registry）
 curl -fsSL -o /tmp/pw-install.sh https://raw.githubusercontent.com/MartyYao/paper-workflow-bundle/main/install.sh
 bash /tmp/pw-install.sh
 
-# 方式 2：只补缺失的单个技能
-hermes skills install MartyYao/paper-workflow-bundle/skills/<技能名> --category research --yes
+# 方式 2：只补缺失的单个技能（同上 zip 方式，手动拷贝）
+#   curl -fsSL -o /tmp/pw.zip https://codeload.github.com/MartyYao/paper-workflow-bundle/zip/refs/heads/main
+#   解压后拷贝 skills/<技能名>/ 到 ~/.hermes/skills/research/ 对应类别目录
+# ⚠️ 不要用 hermes skills install <repo>/skills/<name> —— GitHub API 有未认证限额，
+#    且 registry 存在同名 paper-workflow（v0.1.0）可能装错来源（2026-08-13 用户反馈）
 ```
 
 安装后重跑 `skills_list()` 验证；仍缺失 → 如实告知用户缺失项和影响范围，降级运行（对应阶段明确提示缺什么），不假装功能可用。

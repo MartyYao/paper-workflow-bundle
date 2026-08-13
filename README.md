@@ -14,23 +14,32 @@
 curl -fsSL https://raw.githubusercontent.com/MartyYao/paper-workflow-bundle/main/install.sh | bash
 ```
 
-## 手动安装
+## 手动安装（等价于脚本做的事）
 
 ```bash
-# 1. 注册 tap（本仓库 skills/ 目录是技能源）
-hermes skills tap add MartyYao/paper-workflow-bundle
+# 1. 下载聚合仓库 zip（codeload 静态 CDN，无 GitHub API 限额）
+curl -fsSL -o /tmp/pw-bundle.zip https://codeload.github.com/MartyYao/paper-workflow-bundle/zip/refs/heads/main
+mkdir -p /tmp/pw-bundle && cd /tmp/pw-bundle && unzip -q ../pw-bundle.zip
 
-# 2. 逐个安装（已安装的会自动跳过）
-for skill in paper-workflow meng-skills stata-regression research-discovery \
-             chinese-literature journal-submission-docx research-media-skill; do
-  hermes skills install "MartyYao/paper-workflow-bundle/skills/$skill" --category research --yes
+# 2. 按类别拷贝 7 个技能
+#    research/:    paper-workflow stata-regression research-discovery chinese-literature research-media-skill
+#    writing/:     meng-skills
+#    productivity/: journal-submission-docx
+for skill in paper-workflow stata-regression research-discovery chinese-literature research-media-skill; do
+  rm -rf ~/.hermes/skills/research/$skill && cp -R paper-workflow-bundle-main/skills/$skill ~/.hermes/skills/research/
 done
+rm -rf ~/.hermes/skills/writing/meng-skills && cp -R paper-workflow-bundle-main/skills/meng-skills ~/.hermes/skills/writing/
+rm -rf ~/.hermes/skills/productivity/journal-submission-docx && cp -R paper-workflow-bundle-main/skills/journal-submission-docx ~/.hermes/skills/productivity/
 
 # 3. （可选）bundle 定义：/paper-workflow 一次加载全部
 mkdir -p ~/.hermes/skill-bundles
-curl -fsSL https://raw.githubusercontent.com/MartyYao/paper-workflow-bundle/main/skill-bundles/paper-workflow.yaml \
-  -o ~/.hermes/skill-bundles/paper-workflow.yaml
+cp paper-workflow-bundle-main/skill-bundles/paper-workflow.yaml ~/.hermes/skill-bundles/
 ```
+
+> **为什么不用 `hermes skills install`（2026-08-13 用户反馈修订）**：
+> 1. GitHub API 未认证限额 60 次/小时——7 个技能逐个 install 一次装不完（`Could not fetch from any source`）
+> 2. registry（clawhub）存在同名 `paper-workflow`（v0.1.0）——install 可能解析到 registry 版而非本仓库版
+> 本仓库的 install.sh 直接下载 zip 拷贝，绕开这两个问题。安装后**务必验证版本**（见下方排障）。
 
 ## 使用方法
 
@@ -57,11 +66,18 @@ curl -fsSL https://raw.githubusercontent.com/MartyYao/paper-workflow-bundle/main
 ## 更新
 
 ```bash
-hermes skills update          # 更新所有 hub 安装的技能
-# 或重新运行 install.sh（已安装的会跳过）
+# 重新运行 install.sh（zip 覆盖式安装，幂等）
+curl -fsSL https://raw.githubusercontent.com/MartyYao/paper-workflow-bundle/main/install.sh | bash
 ```
 
-聚合仓库每日 UTC 0 点自动从各源仓库同步最新版（也可在 Actions 页手动触发 `sync-skills`）。
+## 排障
+
+| 症状 | 原因 | 解决 |
+|------|------|------|
+| `hermes skills list` 显示 paper-workflow 版本 0.1.0 | 装到了 registry（clawhub）同名技能，不是本仓库版 | `hermes skills uninstall paper-workflow`（如可卸载）后重跑 install.sh；或直接重跑 install.sh（zip 覆盖） |
+| `hermes skills update` 后版本被降级 | `.hub/lock.json` 里有 registry 同名残留 | install.sh 已自动清理 clawhub 残留；手动清理：删除 `~/.hermes/skills/.hub/lock.json` 中 `paper-workflow` 等条目 |
+| 安装报 `Could not fetch from any source` | GitHub API 未认证限额 60 次/小时（用 `hermes skills install` 逐个装时） | 改用本仓库 install.sh（zip 静态 CDN，无 API 限额） |
+| 技能显示为 `local` 源、`hermes skills update` 不跟踪 | 本方案就是本地拷贝（有意为之） | 更新 = 重跑 install.sh；如需 hub 托管，先配 `GITHUB_TOKEN` 到 `~/.hermes/.env` 或登录 `gh`，再走 `hermes skills install` |
 
 ## 目录结构
 
