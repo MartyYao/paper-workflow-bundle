@@ -10,4 +10,4 @@
 | research-discovery | research-discovery-skill | 0.1.1 |
 | chinese-literature | Chinese-Literature-Skill | 0.1.1 |
 | journal-submission-docx | journal-submission-docx-skill | 0.1.1 |
-| research-media-skill | research-media-skill | 0.1.2 |
+| research-media-skill | research-media-skill | 0.1.3 |
