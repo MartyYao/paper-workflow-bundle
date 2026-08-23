@@ -1,6 +1,6 @@
 # paper-workflow-bundle
 
-论文全流程技能全家桶聚合仓库：一个 tap 源装齐 `paper-workflow` 及其全部配套技能。
+经管实证论文全流程技能全家桶聚合仓库：一个 tap 源装齐 `paper-workflow` 及其全部配套技能。
 
 `paper-workflow`（8 阶段论文编排器）依赖 6 个配套技能才能完整运转。本仓库把 7 个技能聚合到单一 GitHub 仓库，支持：
 
