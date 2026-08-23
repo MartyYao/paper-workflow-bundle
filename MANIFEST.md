@@ -5,7 +5,7 @@
 | 技能名 | 源仓库 | 版本 |
 |--------|--------|------|
 | paper-workflow | paper-workflow-skill | 0.4.2 |
-| meng-skills | meng-skills | - |
+| meng-skills | meng-skills | 0.40.5 |
 | stata-regression | Stata-Regression-skill | 0.2.5 |
 | research-discovery | research-discovery-skill | 0.1.1 |
 | chinese-literature | Chinese-Literature-Skill | 0.1.1 |
