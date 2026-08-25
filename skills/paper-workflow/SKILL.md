@@ -1,6 +1,6 @@
 ---
 name: paper-workflow
-version: 0.4.2
+version: 0.5.0
 description: >
   8 阶段论文全流程编排器，覆盖从选题到投稿的完整实证研究生命周期。
   触发条件：用户说"写论文""开始写论文""论文工作流""继续论文""论文写到哪了"
@@ -34,9 +34,11 @@ terminal("pyresearch -c \"import pandas as pd; ...\"")
 
 本 skill 是论文写作的**总调度器**，不替代任何现有工具，而是：
 - 读取 Obsidian 项目仪表盘 → 知道当前状态和上下文
-- 调用现有 skill（meng-skills、aers-index、academic-literature-collector、obsidian 等）
+- 调用现有 skill（research-topic、meng-skills、aers-index、academic-literature-collector、obsidian 等）
 - 在阶段边界写入决策门
 - 每次会话结束后更新仪表盘
+
+**阶段 0 的专业能力由 `research-topic` 承担**：本 skill 不直接进行选题检索、空白论证、创新价值评估或可行性审计，只负责传递项目上下文、检查成果物、等待用户确认并推进阶段。`research-topic` 是独立配套技能，见 [MartyYao/research-topic-skill](https://github.com/MartyYao/research-topic-skill)。
 
 ### 项目结构
 
@@ -113,7 +115,7 @@ terminal("pyresearch -c \"import pandas as pd; ...\"")
 
 ## 依赖自检（会话启动时强制执行，v0.4.0）
 
-本技能依赖 6 个配套技能才能完整运转。**每个新会话的第二步**（读取仪表盘之后、进入任何阶段之前）执行：
+本技能依赖 7 个配套技能才能完整运转。**每个新会话的第二步**（读取仪表盘之后、进入任何阶段之前）执行：
 
 ### 检查清单
 
@@ -121,6 +123,7 @@ terminal("pyresearch -c \"import pandas as pd; ...\"")
 
 | 配套技能 | 缺失时影响 |
 |---------|-----------|
+| research-topic v0.1.0 | 阶段 0 无法完成双语文献空白、创新价值和可行性审计；不得直接确认新题目 |
 | meng-skills | 写作/润色阶段无去 AI 味能力 |
 | stata-regression | 阶段 4/5 无法执行 Stata（硬依赖） |
 | research-discovery | 实证异常结果无法分层诊断 |
@@ -198,33 +201,44 @@ read_file("研究/<项目名>/论文写作/00-项目仪表盘.md")
 
 ## 阶段 0：选题设计
 
-**定位**：结构化对话，不自动化。AI 的角色是引导和检查，决策权在用户。
+**定位**：阶段 0 的中枢入口。专业选题工作全部委托给 `research-topic`，本 skill 只做路由、状态、成果物和决策门。
 
-### 0.1 文献全景扫描
+### 0.1 调用 research-topic
 
-- 检查 Zotero 精读库覆盖范围
-- 加载 aers-index，查找 AERS 中与该方向的 novelty-check 方法论
-- 产出：领域地图（谁做了什么、用什么方法、DV 是什么、剩余空白在哪）
+调用前传递：
 
-### 0.2 空白定位对话
+- 项目仪表盘和当前阶段；
+- 用户既有论文、博士论文和研究方向；
+- `01-选题/` 中已有短名单、淘汰记录、研究计划；
+- `agent memory/学术/_设计/` 中相关设计经验；
+- 若由实证发现回退，传递 `研究发现/03-选题孵化.md` 和对应发现文件。
 
-**第一步：加载护栏**。读取 `references/edmans-guardrails.md`，获取完整 7 条 Edmans 护栏清单。
+要求 `research-topic` 按其自身 SKILL.md 和 references 完成：问题界定 → 中英文检索 → 证据台账 → 空白论证 → 创新价值 → 可行性审计 → 竞争性解释 → GO/HOLD/KILL。
 
-逐条讨论可能的空白方向，用护栏过滤。
+### 0.2 阶段 0 成果物检查
 
-产出：选题短名单（3-5 个方向），存入 `01-选题/选题短名单.md`
+没有以下成果物，不得把阶段 0 标记为完成：
 
-**淘汰方向的处理**：判断为不可行的方向，记录到 `01-选题/淘汰选题记录.md`（方向简述 + 淘汰原因 + 日期）。避免跨会话重复讨论已淘汰的选题。典型案例：政务服务数字化→企业 TFP（2025 年选题讨论中因已有大量文献覆盖而淘汰）。
+- `选题检索边界.md`
+- `文献全景地图.md`
+- `文献证据台账.csv`
+- `文献矩阵.md`
+- `空白证据备忘录.md`
+- `创新价值备忘录.md`
+- `可行性审计.md`
+- `竞争性解释矩阵.md`
+- `选题短名单.md`
+- `淘汰选题记录.md`（若存在被淘汰方向）
 
-### 0.3 选题确认
+至少一个候选档案必须通过 `research-topic/scripts/validate_topic_dossier.py`；证据台账必须通过 `validate_evidence_ledger.py`。脚本通过只表示结构完整，不表示空白、贡献或因果识别已经成立。
 
-对每个候选方向：
-1. **查新**：加载 aers-index → 调用 AERS novelty-check 方法论
-2. **数据可行性**：CSMAR/Wind/手工收集是否可得
-3. **识别可行性**：处理变量变异来源、处理组/控制组比例
-4. **设定预期发表层次**：CSSCI 目标，务实不拔高
+### 0.3 用户决策门
 
-产出：最终选题 + 研究计划，存入 `01-选题/研究计划.md`
+- `GO`：用户确认某一候选题目，才生成/更新 `01-选题/研究计划.md`，并进入阶段 1 或阶段 2；
+- `HOLD`：记录缺失证据、责任动作和截止条件，不得强行进入研究设计；
+- `KILL`：把方向和证据写入 `淘汰选题记录.md`，不得在下一次会话中无记录重复提出。
+
+阶段 0 不自动替用户决定题目。`paper-workflow` 只记录用户确认的决策、更新仪表盘，并把 `research-topic` 的检索边界和文献台账传给阶段 1，避免正式综述重新从零开始。
 
 ---
 
@@ -926,7 +940,7 @@ python3 <stata-regression>/scripts/verify-numbers.py "06-论文稿/正文/05-实
 - AERS paper-pipeline：5 阶段打磨流水线设计
 - AERS Full Empirical · Stata（00.2）：Stata 8 步实证清单
 
-具体方法论内容通过 aers-index skill 按需加载，不重复存储。
+阶段 0 的选题方法论通过 `research-topic` 按需加载，不在本 skill 重复存储；其余阶段的具体方法论继续通过 aers-index 和现有配套技能按需加载。
 
 ## 关键参考文献
 

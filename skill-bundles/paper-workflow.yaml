@@ -1,7 +1,8 @@
 name: paper-workflow
-description: 8 阶段论文全流程 — 一次加载全部配套技能（写作/Stata/文献/投稿/论坛）
+description: 8 阶段论文全流程 — 一次加载全部配套技能（选题/写作/Stata/文献/投稿/论坛）
 skills:
   - paper-workflow
+  - research-topic
   - meng-skills
   - stata-regression
   - research-discovery
@@ -10,5 +11,6 @@ skills:
   - research-media-skill
 instruction: |
   用户触发论文工作流时，按 paper-workflow 的 8 阶段编排执行。
+  阶段 0 选题先加载 research-topic，完成双语证据、空白/贡献、可行性审计和 GO/HOLD/KILL 决策门。
   阶段内需要写作润色用 meng-skills，Stata 执行先加载 stata-regression，
   文献检索用 chinese-literature，投稿转换用 journal-submission-docx。

@@ -1,11 +1,13 @@
 # paper-workflow-bundle
 
+> Version: v0.1.0（2026-08-25）
+
 经管实证论文全流程技能全家桶聚合仓库：一个 tap 源装齐 `paper-workflow` 及其全部配套技能。
 
-`paper-workflow`（8 阶段论文编排器）依赖 6 个配套技能才能完整运转。本仓库把 7 个技能聚合到单一 GitHub 仓库，支持：
+`paper-workflow`（8 阶段论文编排器）依赖 7 个配套技能才能完整运转。本仓库把 8 个技能聚合到单一 GitHub 仓库，支持：
 
 1. **一键安装**：`hermes skills tap add` + 循环 `install`，一条命令装齐全家桶
-2. **运行时 bundle**：`/paper-workflow` 一次加载全部 7 个技能
+2. **运行时 bundle**：`/paper-workflow` 一次加载全部 8 个技能
 3. **自动同步**：GitHub Action 每日从各源仓库拉取最新版，聚合仓始终是最新镜像
 
 ## 快速安装
@@ -21,11 +23,11 @@ curl -fsSL https://raw.githubusercontent.com/MartyYao/paper-workflow-bundle/main
 curl -fsSL -o /tmp/pw-bundle.zip https://codeload.github.com/MartyYao/paper-workflow-bundle/zip/refs/heads/main
 mkdir -p /tmp/pw-bundle && cd /tmp/pw-bundle && unzip -q ../pw-bundle.zip
 
-# 2. 按类别拷贝 7 个技能
-#    research/:    paper-workflow stata-regression research-discovery chinese-literature research-media-skill
+# 2. 按类别拷贝 8 个技能
+#    research/:    paper-workflow research-topic stata-regression research-discovery chinese-literature research-media-skill
 #    writing/:     meng-skills
 #    productivity/: journal-submission-docx
-for skill in paper-workflow stata-regression research-discovery chinese-literature research-media-skill; do
+for skill in paper-workflow research-topic stata-regression research-discovery chinese-literature research-media-skill; do
   rm -rf ~/.hermes/skills/research/$skill && cp -R paper-workflow-bundle-main/skills/$skill ~/.hermes/skills/research/
 done
 rm -rf ~/.hermes/skills/writing/meng-skills && cp -R paper-workflow-bundle-main/skills/meng-skills ~/.hermes/skills/writing/
@@ -37,7 +39,7 @@ cp paper-workflow-bundle-main/skill-bundles/paper-workflow.yaml ~/.hermes/skill-
 ```
 
 > **为什么不用 `hermes skills install`（2026-08-13 用户反馈修订）**：
-> 1. GitHub API 未认证限额 60 次/小时——7 个技能逐个 install 一次装不完（`Could not fetch from any source`）
+> 1. GitHub API 未认证限额 60 次/小时——8 个技能逐个 install 一次装不完（`Could not fetch from any source`）
 > 2. registry（clawhub）存在同名 `paper-workflow`（v0.1.0）——install 可能解析到 registry 版而非本仓库版
 > 本仓库的 install.sh 直接下载 zip 拷贝，绕开这两个问题。安装后**务必验证版本**（见下方排障）。
 
@@ -46,7 +48,7 @@ cp paper-workflow-bundle-main/skill-bundles/paper-workflow.yaml ~/.hermes/skill-
 | 方式 | 命令/说法 | 效果 |
 |------|-----------|------|
 | 自然语言 | 「写论文」「开始写论文」「继续论文」 | 触发 paper-workflow 编排器 |
-| 一次加载全部 | `/paper-workflow` | 7 个技能全部加载（bundle） |
+| 一次加载全部 | `/paper-workflow` | 8 个技能全部加载（bundle） |
 | 单个技能 | `/stata-regression`、`/meng-skills` 等 | 只加载一个 |
 
 ## 配套技能清单
@@ -54,6 +56,7 @@ cp paper-workflow-bundle-main/skill-bundles/paper-workflow.yaml ~/.hermes/skill-
 | 技能名 | 源仓库 | 用途 |
 |--------|--------|------|
 | paper-workflow | [paper-workflow-skill](https://github.com/MartyYao/paper-workflow-skill) | 8 阶段论文编排器（总调度） |
+| research-topic | [research-topic-skill](https://github.com/MartyYao/research-topic-skill) | 阶段 0 双语选题证据、空白/贡献、可行性审计和决策门 |
 | meng-skills | [meng-skills](https://github.com/MartyYao/meng-skills) | 中文写作润色、去 AI 味 |
 | stata-regression | [Stata-Regression-skill](https://github.com/MartyYao/Stata-Regression-skill) | Stata 编码规范、表格、出图 |
 | research-discovery | [research-discovery-skill](https://github.com/MartyYao/research-discovery-skill) | 实证异常结果分层诊断 |
@@ -85,6 +88,7 @@ curl -fsSL https://raw.githubusercontent.com/MartyYao/paper-workflow-bundle/main
 paper-workflow-bundle/
 ├── skills/                     # tap 技能源（每技能一个文件夹）
 │   ├── paper-workflow/         #   SKILL.md + references/ + scripts/ ...
+│   ├── research-topic/         #   SKILL.md + references/ + scripts/ ...
 │   ├── meng-skills/
 │   ├── stata-regression/
 │   ├── research-discovery/
@@ -103,4 +107,4 @@ paper-workflow-bundle/
 
 - **本仓库是镜像层**：技能内容只从源仓库单向同步，不在本仓库直接修改
 - 修改某个技能 → 改它的源仓库 → 推送到 main → 等每日同步或手动触发 Action
-- 新增配套技能 → 更新 `scripts/sync_skills.py` 的映射 + `install.sh` 的 SKILLS 列表 + 本 README 表格
+- 新增配套技能 → 更新 `scripts/sync_skills.py` 的映射 + `install.sh` 的 SKILLS 列表 + bundle YAML + 本 README 表格

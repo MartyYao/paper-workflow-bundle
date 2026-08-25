@@ -1,5 +1,7 @@
 # Edmans 选题质量护栏
 
+> 兼容说明（v0.3.0）：阶段 0 的选题专业能力已迁移到独立 `research-topic` 技能。该文件保留为旧项目和旧会话的兼容副本；新选题应读取 `research-topic/references/quality-guardrails.md`，paper-workflow 不再直接调度本文件。
+
 来源：Edmans (2024) "Learnings From 1000 Rejections"，经 AERS econfin-proposal 整理。
 
 ## 护栏清单

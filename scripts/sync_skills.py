@@ -19,6 +19,7 @@ GITHUB = "https://raw.githubusercontent.com/MartyYao"
 # skill-name -> (源 repo, 需要拷贝的子目录)
 SOURCES = {
     "paper-workflow": ("paper-workflow-skill", ["references"]),
+    "research-topic": ("research-topic-skill", ["references", "scripts"]),
     "meng-skills": ("meng-skills", ["references"]),
     "stata-regression": ("Stata-Regression-skill", ["references", "templates", "scripts", "assets"]),
     "research-discovery": ("research-discovery-skill", []),
@@ -57,6 +58,15 @@ def _ver_tuple(ver: str):
     return tuple(nums) if nums else None
 
 
+def extract_version(content: bytes) -> str:
+    """支持旧技能顶层 version 和标准 metadata.version 两种写法。"""
+    for pattern in (rb"^version:\s*(\S+)", rb"^\s+version:\s*(\S+)"):
+        m = re.search(pattern, content, re.M)
+        if m:
+            return m.group(1).decode()
+    return "-"
+
+
 def sync_skill(skill: str, repo: str, keep_dirs: list[str]) -> None:
     dst = os.path.join(SKILLS_DIR, skill)
     os.makedirs(dst, exist_ok=True)
@@ -64,8 +74,7 @@ def sync_skill(skill: str, repo: str, keep_dirs: list[str]) -> None:
 
     # SKILL.md（必须）
     content = fetch(f"{GITHUB}/{repo}/main/SKILL.md")
-    m = re.search(rb"^version:\s*(\S+)", content, re.M)
-    ver = m.group(1).decode() if m else "-"
+    ver = extract_version(content)
     old = b""
     if os.path.exists(os.path.join(dst, "SKILL.md")):
         old = open(os.path.join(dst, "SKILL.md"), "rb").read()
@@ -73,8 +82,9 @@ def sync_skill(skill: str, repo: str, keep_dirs: list[str]) -> None:
     # 版本倒退保护：raw CDN 有延迟，可能拉到旧版覆盖新版（真实事故）。
     # 远端版本 < 本地版本时跳过覆盖并告警。
     if old:
-        m2 = re.search(rb"^version:\s*(\S+)", old, re.M)
-        old_ver = m2.group(1).decode() if m2 else None
+        old_ver = extract_version(old)
+        if old_ver == "-":
+            old_ver = None
         if old_ver and old_ver != ver:
             nv, ov = _ver_tuple(ver), _ver_tuple(old_ver)
             if nv and ov and nv < ov:
