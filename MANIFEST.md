@@ -4,11 +4,11 @@
 
 | 技能名 | 源仓库 | 版本 |
 |--------|--------|------|
-| paper-workflow | paper-workflow-skill | 0.5.0 |
-| research-topic | research-topic-skill | 0.1.0 |
-| meng-skills | meng-skills | 0.40.6 |
-| stata-regression | Stata-Regression-skill | 0.2.5 |
-| research-discovery | research-discovery-skill | 0.1.1 |
-| chinese-literature | Chinese-Literature-Skill | 0.1.1 |
-| journal-submission-docx | journal-submission-docx-skill | 0.1.1 |
-| research-media-skill | research-media-skill | 0.1.3 |
+| paper-workflow | paper-workflow-skill | v0.5.0 |
+| research-topic | research-topic-skill | v0.1.0 |
+| meng-skills | meng-skills | v0.4.6 |
+| stata-regression | Stata-Regression-skill | v0.2.5 |
+| research-discovery | research-discovery-skill | v0.1.1 |
+| chinese-literature | Chinese-Literature-Skill | v0.1.1 |
+| journal-submission-docx | journal-submission-docx-skill | v0.1.1 |
+| research-media-skill | research-media-skill | v0.1.3 |

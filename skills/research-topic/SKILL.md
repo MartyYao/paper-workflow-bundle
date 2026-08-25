@@ -2,7 +2,7 @@
 name: research-topic
 description: "为中文公司金融与经管实证论文完成证据约束的选题发现、中文与英文文献空白识别、创新价值评估、数据与识别可行性审计、竞争性解释设计和选题决策。用户说选题、找研究方向、确认研究空白、评估创新性、评估可行性、开始新论文或 paper-workflow 进入阶段 0 时使用。"
 metadata:
-  version: 0.1.0
+  version: v0.1.0
 ---
 
 # Research Topic

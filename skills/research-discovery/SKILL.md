@@ -1,6 +1,6 @@
 ---
 name: research-discovery
-version: 0.1.1
+version: v0.1.1
 description: 实证结果与假设不符时使用：诊断意外发现、修正假设、沉淀经验。触发：不显著/符号反转/平行趋势失败/机制不通。
 ---
 

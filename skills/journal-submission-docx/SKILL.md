@@ -1,6 +1,6 @@
 ---
 name: journal-submission-docx
-version: 0.1.1
+version: v0.1.1
 description: 生成期刊投稿版 Word（docx）时使用。触发：投稿版、生成 Word 版、终稿 docx、按期刊格式。
 ---
 

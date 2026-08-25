@@ -1,6 +1,6 @@
 ---
 name: research-media-skill
-version: 0.1.3
+version: v0.1.3
 description: >
   搜索经管之家(bbs.pinggu.org)等中文论坛获取实证实操方案。触发：Stata/计量/平行趋势/DID/回归问题。
   登录墙站点读帖主路线 = 腾讯 BrowserSkill (bsk) 真实浏览器登录态直连；无 bsk 环境降级为 curl + cookie。

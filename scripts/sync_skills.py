@@ -47,8 +47,11 @@ def list_repo_files(repo: str) -> list[str]:
 
 
 def _ver_tuple(ver: str):
-    """'0.4.0' -> (0,4,0)；无版本号返回 None"""
+    """将 v0.4.0、0.4.0 和旧写法 0.40.0 统一比较。"""
+    ver = ver.strip().lstrip("vV")
     parts = re.split(r"[.-]", ver.strip())
+    if len(parts) >= 2 and parts[0] == "0" and parts[1].endswith("0") and len(parts[1]) > 1:
+        parts[1] = parts[1].rstrip("0") or "0"
     nums = []
     for p in parts[:3]:
         if p.isdigit():

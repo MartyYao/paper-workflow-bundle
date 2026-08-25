@@ -1,7 +1,7 @@
 ---
 name: chinese-literature
 description: "中文文献检索与采集——两通道策略：CNKI 浏览器注入搜索（主动）、CNKI RSS（被动推送）。用于 paper-workflow 阶段 1 的中文文献层。"
-version: 0.1.1
+version: v0.1.1
 category: research
 tags: [CNKI, Chinese, journals, literature-review, academic, RSS]
 trigger: "用户需要搜索中文文献、查知网论文、监控中文期刊、做文献综述中的中文部分"
