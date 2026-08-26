@@ -11,16 +11,27 @@ from pathlib import Path
 
 REQUIRED_COLUMNS = {
     "record_id",
+    "branch_id",
+    "relation_type",
+    "search_status",
     "language",
     "source",
     "search_date",
     "query",
     "title",
+    "firm_level",
+    "x_concept",
+    "y_concept",
+    "mechanism",
+    "sample",
+    "identification",
     "evidence_role",
     "screen_status",
 }
 VALID_ROLES = {"support", "challenge", "limit", "context"}
 VALID_STATUS = {"included", "excluded", "uncertain"}
+VALID_RELATIONS = {"DIRECT", "ADJACENT-X", "ADJACENT-Y", "ADJACENT-M", "BACKGROUND"}
+VALID_SEARCH_STATUS = {"LOCATED", "NOT-LOCATED-WITHIN-BOUNDARY", "UNKNOWN"}
 
 
 def main() -> int:
@@ -53,9 +64,30 @@ def main() -> int:
             errors.append(f"line {line_no}: duplicate record_id {record_id}")
         ids.add(record_id)
 
-        for field in ("language", "source", "search_date", "query", "title"):
+        for field in (
+            "branch_id",
+            "language",
+            "source",
+            "search_date",
+            "query",
+            "title",
+            "firm_level",
+            "x_concept",
+            "y_concept",
+            "mechanism",
+            "sample",
+            "identification",
+        ):
             if not row.get(field, "").strip():
                 errors.append(f"line {line_no}: empty {field}")
+
+        relation = row.get("relation_type", "").strip()
+        if relation not in VALID_RELATIONS:
+            errors.append(f"line {line_no}: invalid relation_type {relation!r}")
+
+        search_status = row.get("search_status", "").strip()
+        if search_status not in VALID_SEARCH_STATUS:
+            errors.append(f"line {line_no}: invalid search_status {search_status!r}")
 
         role = row.get("evidence_role", "").strip()
         roles.add(role)

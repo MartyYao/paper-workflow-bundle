@@ -1,9 +1,10 @@
 # paper-workflow-bundle
 
-> Version: v0.1.0（2026-08-25）
+> Version: v0.2.0（2026-08-26）
 
 经管实证论文全流程技能全家桶聚合仓库：一个 tap 源装齐 `paper-workflow` 及其全部配套技能。
 
+> v0.2.0：`research-topic` 升级为“研究问题版图 → 空白成因 → 研究谜题 → 单一 X/Y → 碰撞审计”的研究发现工具，并同步更新 bundle 安装、同步和版本清单。
 `paper-workflow`（8 阶段论文编排器）依赖 7 个配套技能才能完整运转。本仓库把 8 个技能聚合到单一 GitHub 仓库，支持：
 
 1. **一键安装**：`hermes skills tap add` + 循环 `install`，一条命令装齐全家桶
@@ -56,7 +57,7 @@ cp paper-workflow-bundle-main/skill-bundles/paper-workflow.yaml ~/.hermes/skill-
 | 技能名 | 源仓库 | 用途 |
 |--------|--------|------|
 | paper-workflow | [paper-workflow-skill](https://github.com/MartyYao/paper-workflow-skill) | 8 阶段论文编排器（总调度） |
-| research-topic | [research-topic-skill](https://github.com/MartyYao/research-topic-skill) | 阶段 0 双语选题证据、空白/贡献、可行性审计和决策门 |
+| research-topic | [research-topic-skill](https://github.com/MartyYao/research-topic-skill) | 研究问题版图、文献空白诊断和公司金融选题审计 |
 | meng-skills | [meng-skills](https://github.com/MartyYao/meng-skills) | 中文写作润色、去 AI 味 |
 | stata-regression | [Stata-Regression-skill](https://github.com/MartyYao/Stata-Regression-skill) | Stata 编码规范、表格、出图 |
 | research-discovery | [research-discovery-skill](https://github.com/MartyYao/research-discovery-skill) | 实证异常结果分层诊断 |
@@ -77,6 +78,7 @@ curl -fsSL https://raw.githubusercontent.com/MartyYao/paper-workflow-bundle/main
 
 | 症状 | 原因 | 解决 |
 |------|------|------|
+| `research-topic` 仍显示 v0.1.0 | 聚合包尚未更新或本地安装的是旧 bundle | 重新运行 install.sh；应显示 v0.2.0 |
 | `hermes skills list` 显示 paper-workflow 版本 0.1.0 | 装到了 registry（clawhub）同名技能，不是本仓库版 | `hermes skills uninstall paper-workflow`（如可卸载）后重跑 install.sh；或直接重跑 install.sh（zip 覆盖） |
 | `hermes skills update` 后版本被降级 | `.hub/lock.json` 里有 registry 同名残留 | install.sh 已自动清理 clawhub 残留；手动清理：删除 `~/.hermes/skills/.hub/lock.json` 中 `paper-workflow` 等条目 |
 | 安装报 `Could not fetch from any source` | GitHub API 未认证限额 60 次/小时（用 `hermes skills install` 逐个装时） | 改用本仓库 install.sh（zip 静态 CDN，无 API 限额） |

@@ -70,11 +70,18 @@
 
 ## 5. 最低覆盖检查
 
-候选题目进入决策门前，检查：
+探索初筛检查：
+
+- 至少建立 4 个研究分支，每个分支至少 3 篇独立学术文献；
+- 每个分支尽量至少有 1 篇中文和 1 篇英文，且分支层面至少有 1 篇挑战、限制或不同结论的研究；
+- 同一 X×Y 尚未形成前，不强行要求精确文献；精确文献为 0 时记录 `UNKNOWN` 或 `NOT-LOCATED-WITHIN-BOUNDARY`，不作“没人研究”的判断。
+
+优先路径进入决策门前，检查：
 
 - 中文近五年核心/CSSCI 文献已查；
 - 英文对应主题及相邻机制文献已查；
 - 经典理论和方法文献已查；
+- 优先分支已扩展到 5—8 篇独立学术文献，且包含精确、邻近、近期和挑战/限定性研究；
 - 同一 X×Y、同一政策×Y 和同一机制×Y 的竞争论文已查；
 - 至少一批反对、限制或得到不同结论的文献已查；
 - 关键词、数据库、日期和筛选过程已写入台账；
@@ -87,12 +94,13 @@
 `文献证据台账.csv` 至少包含：
 
 ```text
-record_id,language,source,search_date,query,title,authors,year,journal,doi,
-evidence_role,claim_supported,claim_challenged,screen_status,fulltext_status,
-exclusion_reason,notes
+record_id,branch_id,relation_type,search_status,language,source,search_date,query,
+title,authors,year,journal,doi,firm_level,x_concept,y_concept,mechanism,
+sample,identification,evidence_role,claim_supported,claim_challenged,
+screen_status,fulltext_status,exclusion_reason,notes
 ```
 
-`evidence_role` 使用 `support`、`challenge`、`limit`、`context`；`screen_status` 使用 `included`、`excluded`、`uncertain`。不确定记录不得静默删除。
+`relation_type` 使用 `DIRECT`、`ADJACENT-X`、`ADJACENT-Y`、`ADJACENT-M`、`BACKGROUND`；`search_status` 使用 `LOCATED`、`NOT-LOCATED-WITHIN-BOUNDARY`、`UNKNOWN`；`evidence_role` 使用 `support`、`challenge`、`limit`、`context`；`screen_status` 使用 `included`、`excluded`、`uncertain`。不确定记录不得静默删除。
 
 ## 方法来源
 

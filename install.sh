@@ -11,7 +11,7 @@
 # 解压拷贝到技能目录，并清理 .hub/lock.json 中的同名残留防止 update 降级。
 #
 # 安装内容:
-#   1. 8 个配套技能（按类别拷贝到 ~/.hermes/skills/<类别>/）
+#   1. 8 个技能（按类别拷贝到 ~/.hermes/skills/<类别>/）
 #   2. bundle 定义（/paper-workflow 一次加载全部）
 set -euo pipefail
 
@@ -55,7 +55,7 @@ for skill in paper-workflow research-topic meng-skills stata-regression research
   mkdir -p "$SKILLS_HOME/$cat_"
   rm -rf "$dst"
   cp -R "$src" "$dst"
-  ver="$(grep -m1 -E '^(version:|  version:)' "$dst/SKILL.md" 2>/dev/null | awk '{print $2}' || echo '?')"
+  ver="$(grep -m1 -E '^(version:|[[:space:]]+version:)' "$dst/SKILL.md" 2>/dev/null | sed -E 's/^[[:space:]]*version:[[:space:]]*//' || echo '?')"
   echo "  已安装: $skill (${ver:-无版本号}) → $cat_/"
 done
 
@@ -114,5 +114,5 @@ echo "  · 更新：重新运行本脚本（zip 覆盖，幂等）"
 echo ""
 echo "⚠️ 验证提示：hermes skills list 应显示 8 个 local 技能。"
 echo "   paper-workflow 版本应 ≥ 0.5.0（grep version ~/.hermes/skills/research/paper-workflow/SKILL.md）"
-echo "   research-topic 版本应为 0.1.0（grep version ~/.hermes/skills/research/research-topic/SKILL.md）"
+echo "   research-topic 版本应为 0.2.0（grep version ~/.hermes/skills/research/research-topic/SKILL.md）"
 echo "   若显示旧版（如 0.1.0），说明装到了 registry 同名技能，请 uninstall 后重跑本脚本。"
